@@ -44,11 +44,24 @@ stages:
         BACKEND_STORAGE_ACCOUNT_NAME: $(BACKEND_STORAGE_ACCOUNT_NAME)
         BACKEND_STORAGE_CONTAINER_NAME: $(BACKEND_STORAGE_CONTAINER_NAME)
         TF_BACKEND_KEY: $(ApplicationName)-$(EnvironmentName)
-        TF_VAR_application_name: $(ApplicationName)
+        TF_VAR_application_name: $(ApplicationName)        
     - task: PublishPipelineArtifact@1
       inputs: 
         targetPath: $(System.DefaultWorkingDirectory)/$(WorkingDirectory)/$(ApplicationName)-$(EnvironmentName).tfplan
         artifactName: tfplan
+    - task: CmdLine@2
+      displayName: "Download and install Trivy"
+      inputs:
+        script: |
+          sudo apt-get install rpm
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.48.1/trivy_0.48.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.48.1_Linux-64bit.deb
+          trivy -v
+    - task: CmdLine@2
+      displayName: Trivy Scan 
+      inputs:
+        script: |
+          trivy config ./
 
 - stage: Apply
   condition: ${{ variables.DeployEnabled }}
